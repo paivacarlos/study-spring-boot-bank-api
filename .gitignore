@@ -1,0 +1,35 @@
+### Compiled / Target Files (Maven) ###
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+.idea_modules/
+
+### Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### VS Code ###
+.vscode/
+
+### Logs & OS Files ###
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+### WSL / Linux Swap Files ###
+*.swp
+*~
