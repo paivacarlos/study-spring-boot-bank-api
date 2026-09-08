@@ -1,4 +1,4 @@
-package com.study.bank_api.mock;
+package com.study.payments.mock;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;

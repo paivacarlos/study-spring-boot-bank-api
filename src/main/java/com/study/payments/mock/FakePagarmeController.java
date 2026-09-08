@@ -1,4 +1,4 @@
-package com.study.bank_api.mock;
+package com.study.payments.mock;
 
 import jakarta.validation.Valid;
 import org.slf4j.Logger;

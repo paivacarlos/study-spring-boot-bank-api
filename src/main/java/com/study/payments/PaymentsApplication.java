@@ -1,13 +1,13 @@
-package com.study.bank_api;
+package com.study.payments;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class BankApiApplication {
+public class PaymentsApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(BankApiApplication.class, args);
+		SpringApplication.run(PaymentsApplication.class, args);
 	}
 
 }

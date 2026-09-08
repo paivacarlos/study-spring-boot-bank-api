@@ -1,4 +1,4 @@
-package com.study.bank_api.model;
+package com.study.payments.model;
 
 public enum PixStatus {
     CREATED,

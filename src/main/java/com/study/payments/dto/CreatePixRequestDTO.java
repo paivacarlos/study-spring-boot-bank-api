@@ -1,4 +1,4 @@
-package com.study.bank_api.dto;
+package com.study.payments.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

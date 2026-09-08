@@ -1,4 +1,4 @@
-package com.study.bank_api.model;
+package com.study.payments.model;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;

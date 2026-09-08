@@ -1,7 +1,7 @@
-package com.study.bank_api.dto;
+package com.study.payments.dto;
 
-import com.study.bank_api.model.PixStatus;
-import com.study.bank_api.model.PixTransaction;
+import com.study.payments.model.PixStatus;
+import com.study.payments.model.PixTransaction;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
