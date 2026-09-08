@@ -1,7 +1,7 @@
 # Read Me First
 The following was discovered as part of building this project:
 
-* The original package name 'com.study.bank-api' is invalid and this project uses 'com.study.bank_api' instead.
+* The original package name 'com.study.bank-api' is invalid and this project uses 'com.study.payments' instead.
 
 # Getting Started
 

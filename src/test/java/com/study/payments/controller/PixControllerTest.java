@@ -1,10 +1,10 @@
-package com.study.bank_api.controller;
+package com.study.payments.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.study.bank_api.dto.CreatePixRequestDTO;
-import com.study.bank_api.dto.PixResponseDTO;
-import com.study.bank_api.model.PixStatus;
-import com.study.bank_api.service.PixService;
+import com.study.payments.dto.CreatePixRequestDTO;
+import com.study.payments.dto.PixResponseDTO;
+import com.study.payments.model.PixStatus;
+import com.study.payments.service.PixService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

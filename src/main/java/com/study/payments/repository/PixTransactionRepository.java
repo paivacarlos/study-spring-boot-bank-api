@@ -1,6 +1,6 @@
-package com.study.bank_api.repository;
+package com.study.payments.repository;
 
-import com.study.bank_api.model.PixTransaction;
+import com.study.payments.model.PixTransaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

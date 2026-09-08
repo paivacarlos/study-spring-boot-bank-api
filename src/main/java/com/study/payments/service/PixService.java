@@ -1,9 +1,9 @@
-package com.study.bank_api.service;
+package com.study.payments.service;
 
-import com.study.bank_api.dto.CreatePixRequestDTO;
-import com.study.bank_api.dto.PixResponseDTO;
-import com.study.bank_api.model.PixTransaction;
-import com.study.bank_api.repository.PixTransactionRepository;
+import com.study.payments.dto.CreatePixRequestDTO;
+import com.study.payments.dto.PixResponseDTO;
+import com.study.payments.model.PixTransaction;
+import com.study.payments.repository.PixTransactionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

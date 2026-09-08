@@ -1,8 +1,8 @@
-package com.study.bank_api.controller;
+package com.study.payments.controller;
 
-import com.study.bank_api.dto.CreatePixRequestDTO;
-import com.study.bank_api.dto.PixResponseDTO;
-import com.study.bank_api.service.PixService;
+import com.study.payments.dto.CreatePixRequestDTO;
+import com.study.payments.dto.PixResponseDTO;
+import com.study.payments.service.PixService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
