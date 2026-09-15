@@ -1,13 +1,16 @@
 package com.study.payments.service;
-import com.study.payments.dto.PagarmeWebhookRequestDTO;
 
 import com.study.payments.dto.CreatePixRequestDTO;
+import com.study.payments.dto.PagarmeWebhookRequestDTO;
 import com.study.payments.dto.PixResponseDTO;
+import com.study.payments.exception.BusinessException;
+import com.study.payments.model.PixStatus;
 import com.study.payments.model.PixTransaction;
 import com.study.payments.repository.PixTransactionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -49,11 +52,49 @@ public class PixService {
         return PixResponseDTO.fromEntity(savedEntity);
     }
 
-        public void processWebhookConfirmation(PagarmeWebhookRequestDTO request) {
+    @Transactional
+    public void processWebhookConfirmation(PagarmeWebhookRequestDTO request) {
         log.info("Processing webhook payment confirmation for transaction code: {}, status: {}",
                 request.code(), request.status());
 
-        // TODO: Na TASK-3.2 implementaremos a busca por ID, idempotência e atualização para PAID com @Transactional
-    }
+        // 1. Conversão do code (String) para UUID
+        UUID transactionId;
+        try {
+            transactionId = UUID.fromString(request.code());
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid UUID format for transaction code: {}", request.code());
+            throw new BusinessException("Invalid transaction code format: " + request.code());
+        }
 
+        // 2. Busca da transação no banco de dados H2
+        PixTransaction transaction = repository.findById(transactionId)
+                .orElseThrow(() -> {
+                    log.error("Transaction not found for ID: {}", transactionId);
+                    return new BusinessException("Pix transaction not found: " + transactionId);
+                });
+
+        // 3. Trava de Idempotência: se já estiver PAID, ignora reprocessamento
+        if (transaction.getStatus() == PixStatus.PAID) {
+            log.warn("Transaction is already marked as PAID. Ignoring duplicate webhook. TransactionId: {}", transactionId);
+            return;
+        }
+
+        // 4. Se já foi REFUNDED, não regride o status da cobrança
+        if (transaction.getStatus() == PixStatus.REFUNDED) {
+            log.warn("Late webhook received for already REFUNDED transaction. TransactionId: {}", transactionId);
+            return;
+        }
+
+        // 5. Se estiver CANCELLED, alerta de pagamento tardio (será auto-estornado na Task 4.5)
+        if (transaction.getStatus() == PixStatus.CANCELLED) {
+            log.warn("Late payment received for CANCELLED transaction. TransactionId: {}. Flagged for auto-refund in Epic 04.", transactionId);
+            return;
+        }
+
+        // 6. Transição legítima de estado: CREATED -> PAID
+        transaction.setStatus(PixStatus.PAID);
+        repository.save(transaction);
+
+        log.info("Pix transaction successfully confirmed as PAID. TransactionId: {}", transactionId);
+    }
 }
