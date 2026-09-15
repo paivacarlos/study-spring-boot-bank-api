@@ -1,4 +1,5 @@
 package com.study.payments.service;
+import com.study.payments.dto.PagarmeWebhookRequestDTO;
 
 import com.study.payments.dto.CreatePixRequestDTO;
 import com.study.payments.dto.PixResponseDTO;
@@ -47,4 +48,12 @@ public class PixService {
         // 4. Retorno do DTO
         return PixResponseDTO.fromEntity(savedEntity);
     }
+
+        public void processWebhookConfirmation(PagarmeWebhookRequestDTO request) {
+        log.info("Processing webhook payment confirmation for transaction code: {}, status: {}",
+                request.code(), request.status());
+
+        // TODO: Na TASK-3.2 implementaremos a busca por ID, idempotência e atualização para PAID com @Transactional
+    }
+
 }
