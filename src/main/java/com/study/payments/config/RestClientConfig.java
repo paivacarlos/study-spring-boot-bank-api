@@ -7,7 +7,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
+
+import java.time.Duration;
 
 @Configuration
 public class RestClientConfig {
@@ -17,16 +20,18 @@ public class RestClientConfig {
     @Value("${gateway.pagarme.url}")
     private String pagarmeBaseUrl;
 
-    /**
-     * Registra o RestClient como um Spring Bean gerenciado no container IoC (Singleton).
-     * O client nasce pré-configurado com a URL base e os cabeçalhos padrão para JSON.
-     */
     @Bean
     public RestClient pagarmeRestClient() {
         log.info("Initializing Pagarme RestClient bean with baseUrl: {}", pagarmeBaseUrl);
 
+        // Configuração explícita de fábrica de requisições com timeouts
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(Duration.ofSeconds(5));
+        requestFactory.setReadTimeout(Duration.ofSeconds(5));
+
         return RestClient.builder()
                 .baseUrl(pagarmeBaseUrl)
+                .requestFactory(requestFactory)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                 .build();
