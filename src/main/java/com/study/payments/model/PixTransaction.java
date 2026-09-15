@@ -53,6 +53,16 @@ public class PixTransaction {
         this.status = PixStatus.CREATED;
     }
 
+    // Adicione este construtor público na PixTransaction.java:
+    public PixTransaction(UUID id, String accountNumber, BigDecimal amount, String qrCode, String pixKey) {
+        this.id = id;
+        this.accountNumber = accountNumber;
+        this.amount = amount;
+        this.qrCode = qrCode;
+        this.pixKey = pixKey;
+        this.status = PixStatus.CREATED;
+    }
+
     public UUID getId() {
         return id;
     }
