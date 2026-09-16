@@ -4,11 +4,14 @@ import com.study.payments.dto.CreatePixRequestDTO;
 import com.study.payments.dto.PagarmeWebhookRequestDTO;
 import com.study.payments.dto.PixResponseDTO;
 import com.study.payments.exception.BusinessException;
+import com.study.payments.exception.ResourceNotFoundException;
 import com.study.payments.model.PixStatus;
 import com.study.payments.model.PixTransaction;
 import com.study.payments.repository.PixTransactionRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -366,5 +369,59 @@ class PixServiceTest {
         assertEquals("Database disk full on save", exception.getMessage());
         verify(repository, times(1)).findById(transactionId);
         verify(repository, times(1)).save(entity);
+    }
+
+    // =========================================================================
+    // TESTES: findPixById
+    // =========================================================================
+
+    @ParameterizedTest
+    @EnumSource(PixStatus.class)
+    @DisplayName("Should return PixResponseDTO reflecting exact transaction status when ID exists")
+    void shouldReturnPixResponseDTOWithExactStatusWhenTransactionExists(PixStatus currentStatus) {
+        // 1. ARRANGE: Cria entidade simulada com o status fornecido pelo enum
+        UUID transactionId = UUID.randomUUID();
+        PixTransaction entity = new PixTransaction(
+                transactionId,
+                "1001-X",
+                new BigDecimal("250.00"),
+                "00020126580014br.gov.bcb.pix...",
+                "carlos@pix.com"
+        );
+        entity.setStatus(currentStatus);
+
+        when(repository.findById(transactionId)).thenReturn(Optional.of(entity));
+
+        // 2. ACT: Execução da busca de consulta
+        PixResponseDTO response = pixService.findPixById(transactionId);
+
+        // 3. ASSERT: Verificação minuciosa dos campos e integridade do status
+        assertNotNull(response);
+        assertEquals(transactionId, response.id());
+        assertEquals("1001-X", response.accountNumber());
+        assertEquals(new BigDecimal("250.00"), response.amount());
+        assertEquals("carlos@pix.com", response.pixKey());
+        assertEquals(currentStatus, response.status(), "O status retornado deve ser idêntico ao estado atual da entidade");
+
+        verify(repository, times(1)).findById(transactionId);
+        verify(repository, never()).save(any(PixTransaction.class));
+    }
+
+    @Test
+    @DisplayName("Should throw ResourceNotFoundException when transaction ID is not found in database")
+    void shouldThrowResourceNotFoundExceptionWhenTransactionDoesNotExist() {
+        // 1. ARRANGE: O repositório não encontra nada para o UUID informado
+        UUID nonExistentId = UUID.randomUUID();
+        when(repository.findById(nonExistentId)).thenReturn(Optional.empty());
+
+        // 2. ACT & ASSERT: Lançamento imediato de ResourceNotFoundException
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> pixService.findPixById(nonExistentId)
+        );
+
+        assertEquals("Pix transaction not found with ID: " + nonExistentId, exception.getMessage());
+        verify(repository, times(1)).findById(nonExistentId);
+        verify(repository, never()).save(any(PixTransaction.class));
     }
 }

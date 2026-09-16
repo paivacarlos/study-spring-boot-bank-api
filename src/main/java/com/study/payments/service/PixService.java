@@ -4,6 +4,7 @@ import com.study.payments.dto.CreatePixRequestDTO;
 import com.study.payments.dto.PagarmeWebhookRequestDTO;
 import com.study.payments.dto.PixResponseDTO;
 import com.study.payments.exception.BusinessException;
+import com.study.payments.exception.ResourceNotFoundException;
 import com.study.payments.model.PixStatus;
 import com.study.payments.model.PixTransaction;
 import com.study.payments.repository.PixTransactionRepository;
@@ -96,5 +97,17 @@ public class PixService {
         repository.save(transaction);
 
         log.info("Pix transaction successfully confirmed as PAID. TransactionId: {}", transactionId);
+    }
+
+    @Transactional(readOnly = true)
+    public PixResponseDTO findPixById(UUID id) {
+        log.info("Fetching Pix transaction details for ID: {}", id);
+
+        return repository.findById(id)
+                .map(PixResponseDTO::fromEntity)
+                .orElseThrow(() -> {
+                    log.warn("Pix transaction not found for ID: {}", id);
+                    return new ResourceNotFoundException("Pix transaction not found with ID: " + id);
+                });
     }
 }
