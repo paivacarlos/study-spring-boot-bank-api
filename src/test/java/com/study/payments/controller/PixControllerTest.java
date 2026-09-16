@@ -3,6 +3,7 @@ package com.study.payments.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.study.payments.dto.CreatePixRequestDTO;
 import com.study.payments.dto.PixResponseDTO;
+import com.study.payments.exception.ResourceNotFoundException;
 import com.study.payments.model.PixStatus;
 import com.study.payments.service.PixService;
 import org.junit.jupiter.api.DisplayName;
@@ -19,6 +20,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -164,6 +166,62 @@ class PixControllerTest {
         mockMvc.perform(post("/api/v1/pix")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(malformedJson))
+                .andExpect(status().isBadRequest());
+    }
+
+    // =========================================================================
+    // TESTES: getPixById (GET /api/v1/pix/{id})
+    // =========================================================================
+
+    @Test
+    @DisplayName("Should return 200 OK and Pix details when transaction exists")
+    void shouldReturn200AndPixDetailsWhenIdExists() throws Exception {
+        // 1. ARRANGE
+        UUID transactionId = UUID.randomUUID();
+        PixResponseDTO expectedResponse = new PixResponseDTO(
+                transactionId,
+                "1001-X",
+                new BigDecimal("150.50"),
+                "00020126580014br.gov.bcb.pix...",
+                "carlos@pix.com",
+                PixStatus.PAID,
+                LocalDateTime.now()
+        );
+
+        when(pixService.findPixById(transactionId)).thenReturn(expectedResponse);
+
+        // 2. ACT & ASSERT
+        mockMvc.perform(get("/api/v1/pix/{id}", transactionId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(transactionId.toString()))
+                .andExpect(jsonPath("$.accountNumber").value("1001-X"))
+                .andExpect(jsonPath("$.amount").value(150.50))
+                .andExpect(jsonPath("$.pixKey").value("carlos@pix.com"))
+                .andExpect(jsonPath("$.status").value("PAID"));
+    }
+
+    @Test
+    @DisplayName("Should return 404 Not Found when transaction does not exist")
+    void shouldReturn404NotFoundWhenTransactionDoesNotExist() throws Exception {
+        // 1. ARRANGE: Serviço lança ResourceNotFoundException
+        UUID nonExistentId = UUID.randomUUID();
+        when(pixService.findPixById(nonExistentId))
+                .thenThrow(new ResourceNotFoundException("Pix transaction not found with ID: " + nonExistentId));
+
+        // 2. ACT & ASSERT: Spring MVC traduz para HTTP 404
+        mockMvc.perform(get("/api/v1/pix/{id}", nonExistentId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should return 400 Bad Request when path variable is not a valid UUID")
+    void shouldReturn400BadRequestWhenIdIsNotAValidUUID() throws Exception {
+        // 1. ACT & ASSERT: Passando uma string arbitrária que não obedece o padrão UUID
+        mockMvc.perform(get("/api/v1/pix/{id}", "chave-invalida-123")
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
     }
 }
