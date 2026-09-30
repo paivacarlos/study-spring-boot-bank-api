@@ -36,4 +36,12 @@ public class PixController {
         log.info("Received GET /api/v1/pix/{} request", id);
         return pixService.findPixById(id);
     }
+
+    @PostMapping("/{id}/refund")
+    @ResponseStatus(HttpStatus.OK)
+    public PixResponseDTO refundPix(@PathVariable UUID id) {
+        log.info("Received POST /api/v1/pix/{}/refund request", id);
+        return pixService.refundPix(id);
+    }
+
 }
