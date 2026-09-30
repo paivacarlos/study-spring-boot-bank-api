@@ -6,12 +6,7 @@ import jakarta.validation.constraints.Positive;
 
 public record PagarmeChargeRequestDTO(
         @NotNull(message = "Amount in cents is required")
-        @Positive(message = "Amount must be greater than zero")
-        Integer amount,
-
-        @JsonProperty("payment_method")
-        String paymentMethod,
-
-        String code
-) {
-}
+                @Positive(message = "Amount must be greater than zero")
+                Integer amount,
+        @JsonProperty("payment_method") String paymentMethod,
+        String code) {}

@@ -23,8 +23,10 @@ public class PixWebhookController {
     @PostMapping("/confirm")
     @ResponseStatus(HttpStatus.OK)
     public void confirmPayment(@RequestBody @Valid PagarmeWebhookRequestDTO request) {
-        log.info("Received payment webhook confirmation for transaction code: {}, status: {}",
-                request.code(), request.status());
+        log.info(
+                "Received payment webhook confirmation for transaction code: {}, status: {}",
+                request.code(),
+                request.status());
 
         pixService.processWebhookConfirmation(request);
     }

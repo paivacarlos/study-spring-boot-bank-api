@@ -85,6 +85,39 @@
 					<compilerArgs>--enable-preview</compilerArgs>
 				</configuration>
 			</plugin>
+			<!-- Plugin Spotless: Padronização e Formatação Automática de Código -->
+			<plugin>
+				<groupId>com.diffplug.spotless</groupId>
+				<artifactId>spotless-maven-plugin</artifactId>
+				<version>2.44.0</version>
+				<configuration>
+					<java>
+						<!-- Remove imports não utilizados -->
+						<removeUnusedImports/>
+						<!-- Ordena os imports alfabeticamente -->
+						<importOrder/>
+						<!-- Remove espaços no final das linhas -->
+						<trimTrailingWhitespace/>
+						<!-- Garante que todo arquivo termina com quebra de linha -->
+						<endWithNewline/>
+						<!-- Formatação com Google Java Format com 4 espaços (AOSP) -->
+						<googleJavaFormat>
+							<version>1.22.0</version>
+							<style>AOSP</style>
+							<reflowLongStrings>true</reflowLongStrings>
+						</googleJavaFormat>
+					</java>
+				</configuration>
+				<!-- Vincula a formatação automática à fase de compilação -->
+				<executions>
+					<execution>
+						<goals>
+							<goal>apply</goal>
+						</goals>
+						<phase>compile</phase>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 

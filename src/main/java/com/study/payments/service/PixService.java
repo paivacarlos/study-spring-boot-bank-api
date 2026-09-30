@@ -8,12 +8,11 @@ import com.study.payments.exception.ResourceNotFoundException;
 import com.study.payments.model.PixStatus;
 import com.study.payments.model.PixTransaction;
 import com.study.payments.repository.PixTransactionRepository;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.UUID;
 
 @Service
 public class PixService {
@@ -27,26 +26,34 @@ public class PixService {
     }
 
     public PixResponseDTO createPix(CreatePixRequestDTO request) {
-        log.info("Initiating creation of Pix payment request for account: {}, amount: {}",
-                request.accountNumber(), request.amount());
+        log.info(
+                "Initiating creation of Pix payment request for account: {}, amount: {}",
+                request.accountNumber(),
+                request.amount());
 
         // 1. Geração de payload simulado para o QR Code
-        String generatedQrCode = "00020126580014br.gov.bcb.pix0136" + request.pixKey() +
-                "520400005303986540" + request.amount() +
-                "5802BR5913BankApi6008BRASILIA62070503***6304" +
-                UUID.randomUUID().toString().substring(0, 4);
+        String generatedQrCode =
+                "00020126580014br.gov.bcb.pix0136"
+                        + request.pixKey()
+                        + "520400005303986540"
+                        + request.amount()
+                        + "5802BR5913BankApi6008BRASILIA62070503***6304"
+                        + UUID.randomUUID().toString().substring(0, 4);
 
         // 2. Criação da Entidade
-        PixTransaction entity = new PixTransaction(
-                request.accountNumber(),
-                request.amount(),
-                generatedQrCode,
-                request.pixKey());
+        PixTransaction entity =
+                new PixTransaction(
+                        request.accountNumber(),
+                        request.amount(),
+                        generatedQrCode,
+                        request.pixKey());
 
         // 3. Persistência da entidade no H2
         PixTransaction savedEntity = repository.save(entity);
-        log.info("Pix payment request successfully created. TransactionId: {}, Status: {}",
-                savedEntity.getId(), savedEntity.getStatus());
+        log.info(
+                "Pix payment request successfully created. TransactionId: {}, Status: {}",
+                savedEntity.getId(),
+                savedEntity.getStatus());
 
         // 4. Retorno do DTO
         return PixResponseDTO.fromEntity(savedEntity);
@@ -54,8 +61,10 @@ public class PixService {
 
     @Transactional
     public void processWebhookConfirmation(PagarmeWebhookRequestDTO request) {
-        log.info("Processing webhook payment confirmation for transaction code: {}, status: {}",
-                request.code(), request.status());
+        log.info(
+                "Processing webhook payment confirmation for transaction code: {}, status: {}",
+                request.code(),
+                request.status());
 
         // 1. Conversão do code (String) para UUID
         UUID transactionId;
@@ -67,22 +76,30 @@ public class PixService {
         }
 
         // 2. Busca da transação no banco de dados H2
-        PixTransaction transaction = repository.findById(transactionId)
-                .orElseThrow(() -> {
-                    log.error("Transaction not found for ID: {}", transactionId);
-                    return new BusinessException("Pix transaction not found: " + transactionId);
-                });
+        PixTransaction transaction =
+                repository
+                        .findById(transactionId)
+                        .orElseThrow(
+                                () -> {
+                                    log.error("Transaction not found for ID: {}", transactionId);
+                                    return new BusinessException(
+                                            "Pix transaction not found: " + transactionId);
+                                });
 
         // 3. Trava de Idempotência: se já estiver PAID, ignora reprocessamento
         if (transaction.getStatus() == PixStatus.PAID) {
-            log.warn("Transaction is already marked as PAID. Ignoring duplicate webhook. TransactionId: {}",
+            log.warn(
+                    "Transaction is already marked as PAID. Ignoring duplicate webhook."
+                            + " TransactionId: {}",
                     transactionId);
             return;
         }
 
         // 4. Se já foi REFUNDED, não regride o status da cobrança
         if (transaction.getStatus() == PixStatus.REFUNDED) {
-            log.warn("Late webhook received for already REFUNDED transaction. TransactionId: {}", transactionId);
+            log.warn(
+                    "Late webhook received for already REFUNDED transaction. TransactionId: {}",
+                    transactionId);
             return;
         }
 
@@ -90,7 +107,8 @@ public class PixService {
         // Task 4.5)
         if (transaction.getStatus() == PixStatus.CANCELLED) {
             log.warn(
-                    "Late payment received for CANCELLED transaction. TransactionId: {}. Flagged for auto-refund in Epic 04.",
+                    "Late payment received for CANCELLED transaction. TransactionId: {}. Flagged"
+                            + " for auto-refund in Epic 04.",
                     transactionId);
             return;
         }
@@ -99,19 +117,23 @@ public class PixService {
         transaction.setStatus(PixStatus.PAID);
         repository.save(transaction);
 
-        log.info("Pix transaction successfully confirmed as PAID. TransactionId: {}", transactionId);
+        log.info(
+                "Pix transaction successfully confirmed as PAID. TransactionId: {}", transactionId);
     }
 
     @Transactional(readOnly = true)
     public PixResponseDTO findPixById(UUID id) {
         log.info("Fetching Pix transaction details for ID: {}", id);
 
-        return repository.findById(id)
+        return repository
+                .findById(id)
                 .map(PixResponseDTO::fromEntity)
-                .orElseThrow(() -> {
-                    log.warn("Pix transaction not found for ID: {}", id);
-                    return new ResourceNotFoundException("Pix transaction not found with ID: " + id);
-                });
+                .orElseThrow(
+                        () -> {
+                            log.warn("Pix transaction not found for ID: {}", id);
+                            return new ResourceNotFoundException(
+                                    "Pix transaction not found with ID: " + id);
+                        });
     }
 
     @Transactional
@@ -119,25 +141,31 @@ public class PixService {
         log.info("Initiating refund process for Pix transaction ID: {}", id);
 
         // 1. Busca a transação no banco de dados pelo ID (ou lança 404)
-        PixTransaction transaction = repository.findById(id)
-                .orElseThrow(() -> {
-                    log.warn("Pix transaction not found for refund. ID: {}", id);
-                    return new ResourceNotFoundException("Pix transaction not found with ID: " + id);
-                });
+        PixTransaction transaction =
+                repository
+                        .findById(id)
+                        .orElseThrow(
+                                () -> {
+                                    log.warn("Pix transaction not found for refund. ID: {}", id);
+                                    return new ResourceNotFoundException(
+                                            "Pix transaction not found with ID: " + id);
+                                });
 
         // 2. Simulação da comunicação com o gateway parceiro (Stone/Pagar.me)
-        log.info("Simulating refund request to external payment gateway for transaction ID: {}", id);
+        log.info(
+                "Simulating refund request to external payment gateway for transaction ID: {}", id);
 
         // 3. Execução da regra de negócio de transição de estado (Entidade Rica)
         transaction.refund();
 
         // 4. Persistência da alteração de estado no banco de dados H2
         PixTransaction refundedTransaction = repository.save(transaction);
-        log.info("Pix transaction successfully refunded. ID: {}, New Status: {}",
-                refundedTransaction.getId(), refundedTransaction.getStatus());
+        log.info(
+                "Pix transaction successfully refunded. ID: {}, New Status: {}",
+                refundedTransaction.getId(),
+                refundedTransaction.getStatus());
 
         // 5. Mapeamento da entidade atualizada para DTO de resposta
         return PixResponseDTO.fromEntity(refundedTransaction);
     }
-
 }
