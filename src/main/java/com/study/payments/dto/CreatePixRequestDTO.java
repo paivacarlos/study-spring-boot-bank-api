@@ -6,14 +6,8 @@ import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 
 public record CreatePixRequestDTO(
-        @NotBlank(message = "Account number is required")
-        String accountNumber,
-
+        @NotBlank(message = "Account number is required") String accountNumber,
         @NotNull(message = "Amount is required")
-        @Positive(message = "Amount must be greater than zero")
-        BigDecimal amount,
-
-        @NotBlank(message = "Pix key is required")
-        String pixKey
-) {
-}
+                @Positive(message = "Amount must be greater than zero")
+                BigDecimal amount,
+        @NotBlank(message = "Pix key is required") String pixKey) {}

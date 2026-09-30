@@ -1,14 +1,12 @@
 package com.study.payments.model;
 
-import jakarta.persistence.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
 import com.study.payments.exception.BusinessException;
-
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "pix_transactions")
@@ -43,8 +41,7 @@ public class PixTransaction {
     private LocalDateTime updatedAt;
 
     // Construtor protegido exigido pela especificação JPA/Hibernate
-    protected PixTransaction() {
-    }
+    protected PixTransaction() {}
 
     // Construtor de negócio para instanciar uma nova cobrança com status inicial
     // CREATED
@@ -57,7 +54,8 @@ public class PixTransaction {
     }
 
     // Adicione este construtor público na PixTransaction.java:
-    public PixTransaction(UUID id, String accountNumber, BigDecimal amount, String qrCode, String pixKey) {
+    public PixTransaction(
+            UUID id, String accountNumber, BigDecimal amount, String qrCode, String pixKey) {
         this.id = id;
         this.accountNumber = accountNumber;
         this.amount = amount;
@@ -70,7 +68,8 @@ public class PixTransaction {
     public void refund() {
         if (this.status != PixStatus.PAID) {
             throw new BusinessException(
-                    "Pix transaction cannot be refunded because its current status is " + this.status);
+                    "Pix transaction cannot be refunded because its current status is "
+                            + this.status);
         }
         this.status = PixStatus.REFUNDED;
     }

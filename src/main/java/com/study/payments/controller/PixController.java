@@ -4,12 +4,11 @@ import com.study.payments.dto.CreatePixRequestDTO;
 import com.study.payments.dto.PixResponseDTO;
 import com.study.payments.service.PixService;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/pix")
@@ -43,5 +42,4 @@ public class PixController {
         log.info("Received POST /api/v1/pix/{}/refund request", id);
         return pixService.refundPix(id);
     }
-
 }

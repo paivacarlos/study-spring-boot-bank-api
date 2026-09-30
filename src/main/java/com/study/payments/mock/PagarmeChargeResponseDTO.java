@@ -8,8 +8,4 @@ public record PagarmeChargeResponseDTO(
         String code,
         Integer amount,
         String status,
-
-        @JsonProperty("paid_at")
-        Instant paidAt
-) {
-}
+        @JsonProperty("paid_at") Instant paidAt) {}

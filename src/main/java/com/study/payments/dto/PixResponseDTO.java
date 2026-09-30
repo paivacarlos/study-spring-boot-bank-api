@@ -2,7 +2,6 @@ package com.study.payments.dto;
 
 import com.study.payments.model.PixStatus;
 import com.study.payments.model.PixTransaction;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -14,8 +13,7 @@ public record PixResponseDTO(
         String qrCode,
         String pixKey,
         PixStatus status,
-        LocalDateTime createdAt
-) {
+        LocalDateTime createdAt) {
     // Método estático utilitário para converter uma Entity em DTO de saída
     public static PixResponseDTO fromEntity(PixTransaction transaction) {
         return new PixResponseDTO(
@@ -25,7 +23,6 @@ public record PixResponseDTO(
                 transaction.getQrCode(),
                 transaction.getPixKey(),
                 transaction.getStatus(),
-                transaction.getCreatedAt()
-        );
+                transaction.getCreatedAt());
     }
 }
