@@ -41,8 +41,7 @@ public class PixService {
                 request.accountNumber(),
                 request.amount(),
                 generatedQrCode,
-                request.pixKey()
-        );
+                request.pixKey());
 
         // 3. Persistência da entidade no H2
         PixTransaction savedEntity = repository.save(entity);
@@ -76,7 +75,8 @@ public class PixService {
 
         // 3. Trava de Idempotência: se já estiver PAID, ignora reprocessamento
         if (transaction.getStatus() == PixStatus.PAID) {
-            log.warn("Transaction is already marked as PAID. Ignoring duplicate webhook. TransactionId: {}", transactionId);
+            log.warn("Transaction is already marked as PAID. Ignoring duplicate webhook. TransactionId: {}",
+                    transactionId);
             return;
         }
 
@@ -86,9 +86,12 @@ public class PixService {
             return;
         }
 
-        // 5. Se estiver CANCELLED, alerta de pagamento tardio (será auto-estornado na Task 4.5)
+        // 5. Se estiver CANCELLED, alerta de pagamento tardio (será auto-estornado na
+        // Task 4.5)
         if (transaction.getStatus() == PixStatus.CANCELLED) {
-            log.warn("Late payment received for CANCELLED transaction. TransactionId: {}. Flagged for auto-refund in Epic 04.", transactionId);
+            log.warn(
+                    "Late payment received for CANCELLED transaction. TransactionId: {}. Flagged for auto-refund in Epic 04.",
+                    transactionId);
             return;
         }
 
@@ -110,4 +113,31 @@ public class PixService {
                     return new ResourceNotFoundException("Pix transaction not found with ID: " + id);
                 });
     }
+
+    @Transactional
+    public PixResponseDTO refundPix(UUID id) {
+        log.info("Initiating refund process for Pix transaction ID: {}", id);
+
+        // 1. Busca a transação no banco de dados pelo ID (ou lança 404)
+        PixTransaction transaction = repository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("Pix transaction not found for refund. ID: {}", id);
+                    return new ResourceNotFoundException("Pix transaction not found with ID: " + id);
+                });
+
+        // 2. Simulação da comunicação com o gateway parceiro (Stone/Pagar.me)
+        log.info("Simulating refund request to external payment gateway for transaction ID: {}", id);
+
+        // 3. Execução da regra de negócio de transição de estado (Entidade Rica)
+        transaction.refund();
+
+        // 4. Persistência da alteração de estado no banco de dados H2
+        PixTransaction refundedTransaction = repository.save(transaction);
+        log.info("Pix transaction successfully refunded. ID: {}, New Status: {}",
+                refundedTransaction.getId(), refundedTransaction.getStatus());
+
+        // 5. Mapeamento da entidade atualizada para DTO de resposta
+        return PixResponseDTO.fromEntity(refundedTransaction);
+    }
+
 }
