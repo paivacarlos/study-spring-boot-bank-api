@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.study.payments.exception.BusinessException;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -44,7 +46,8 @@ public class PixTransaction {
     protected PixTransaction() {
     }
 
-    // Construtor de negócio para instanciar uma nova cobrança com status inicial CREATED
+    // Construtor de negócio para instanciar uma nova cobrança com status inicial
+    // CREATED
     public PixTransaction(String accountNumber, BigDecimal amount, String qrCode, String pixKey) {
         this.accountNumber = accountNumber;
         this.amount = amount;
@@ -61,6 +64,15 @@ public class PixTransaction {
         this.qrCode = qrCode;
         this.pixKey = pixKey;
         this.status = PixStatus.CREATED;
+    }
+
+    // Método de estorno da transação
+    public void refund() {
+        if (this.status != PixStatus.PAID) {
+            throw new BusinessException(
+                    "Pix transaction cannot be refunded because its current status is " + this.status);
+        }
+        this.status = PixStatus.REFUNDED;
     }
 
     public UUID getId() {
