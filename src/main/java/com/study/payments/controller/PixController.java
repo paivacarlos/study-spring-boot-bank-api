@@ -42,4 +42,11 @@ public class PixController {
         log.info("Received POST /api/v1/pix/{}/refund request", id);
         return pixService.refundPix(id);
     }
+
+    @PostMapping("/{id}/cancel")
+    @ResponseStatus(HttpStatus.OK)
+    public PixResponseDTO cancelPix(@PathVariable UUID id) {
+        log.info("Received POST /api/v1/pix/{}/cancel request", id);
+        return pixService.cancelPix(id);
+    }
 }

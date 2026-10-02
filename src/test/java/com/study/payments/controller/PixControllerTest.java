@@ -273,4 +273,65 @@ class PixControllerTest {
                                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
     }
+
+    // =========================================================================
+    // TESTES: cancelPix (POST /api/v1/pix/{id}/cancel)
+    // =========================================================================
+
+    @Test
+    @DisplayName("Should return 200 OK and cancelled Pix details when cancel request is successful")
+    void shouldReturn200AndCancelledPixDetailsWhenCancelIsSuccessful() throws Exception {
+        // 1. ARRANGE: Prepara o DTO simulado com status CANCELLED
+        UUID transactionId = UUID.randomUUID();
+        PixResponseDTO expectedResponse =
+                new PixResponseDTO(
+                        transactionId,
+                        "1001-X",
+                        new BigDecimal("150.50"),
+                        "00020126580014br.gov.bcb.pix...",
+                        "carlos@pix.com",
+                        PixStatus.CANCELLED,
+                        LocalDateTime.now());
+
+        when(pixService.cancelPix(transactionId)).thenReturn(expectedResponse);
+
+        // 2. ACT & ASSERT: Dispara POST na rota de cancel e valida a resposta HTTP 200
+        mockMvc.perform(
+                        post("/api/v1/pix/{id}/cancel", transactionId)
+                                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(transactionId.toString()))
+                .andExpect(jsonPath("$.accountNumber").value("1001-X"))
+                .andExpect(jsonPath("$.amount").value(150.50))
+                .andExpect(jsonPath("$.pixKey").value("carlos@pix.com"))
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+    }
+
+    @Test
+    @DisplayName("Should return 404 Not Found when attempting to cancel non-existent transaction")
+    void shouldReturn404NotFoundWhenCancellingNonExistentTransaction() throws Exception {
+        // 1. ARRANGE: O serviço lança ResourceNotFoundException
+        UUID nonExistentId = UUID.randomUUID();
+        when(pixService.cancelPix(nonExistentId))
+                .thenThrow(
+                        new ResourceNotFoundException(
+                                "Pix transaction not found with ID: " + nonExistentId));
+
+        // 2. ACT & ASSERT: Spring MVC traduz automaticamente a exceção para HTTP 404
+        mockMvc.perform(
+                        post("/api/v1/pix/{id}/cancel", nonExistentId)
+                                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should return 400 Bad Request when path variable for cancel is not a valid UUID")
+    void shouldReturn400BadRequestWhenCancelIdIsNotAValidUUID() throws Exception {
+        // 1. ACT & ASSERT: Passa uma string malformada na URL
+        mockMvc.perform(
+                        post("/api/v1/pix/{id}/cancel", "uuid-invalido-123")
+                                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
 }

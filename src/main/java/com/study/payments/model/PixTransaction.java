@@ -74,6 +74,16 @@ public class PixTransaction {
         this.status = PixStatus.REFUNDED;
     }
 
+    // Método de cancelamento da transação (válido apenas para cobranças pendentes)
+    public void cancel() {
+        if (this.status != PixStatus.CREATED) {
+            throw new BusinessException(
+                    "Pix transaction cannot be cancelled because its current status is "
+                            + this.status);
+        }
+        this.status = PixStatus.CANCELLED;
+    }
+
     public UUID getId() {
         return id;
     }
