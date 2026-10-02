@@ -168,4 +168,35 @@ public class PixService {
         // 5. Mapeamento da entidade atualizada para DTO de resposta
         return PixResponseDTO.fromEntity(refundedTransaction);
     }
+
+    @Transactional
+    public PixResponseDTO cancelPix(UUID id) {
+        log.info("Initiating cancellation process for Pix transaction ID: {}", id);
+
+        // 1. Busca a transação no banco de dados pelo ID (ou lança 404)
+        PixTransaction transaction =
+                repository
+                        .findById(id)
+                        .orElseThrow(
+                                () -> {
+                                    log.warn(
+                                            "Pix transaction not found for cancellation. ID: {}",
+                                            id);
+                                    return new ResourceNotFoundException(
+                                            "Pix transaction not found with ID: " + id);
+                                });
+
+        // 2. Execução da regra de negócio de transição de estado na entidade rica
+        transaction.cancel();
+
+        // 3. Persistência da alteração de estado no banco de dados H2
+        PixTransaction cancelledTransaction = repository.save(transaction);
+        log.info(
+                "Pix transaction successfully cancelled. ID: {}, New Status: {}",
+                cancelledTransaction.getId(),
+                cancelledTransaction.getStatus());
+
+        // 4. Mapeamento da entidade atualizada para DTO de resposta imutável
+        return PixResponseDTO.fromEntity(cancelledTransaction);
+    }
 }
