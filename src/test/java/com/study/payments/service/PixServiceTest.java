@@ -475,4 +475,86 @@ class PixServiceTest {
         verify(repository, times(1)).findById(transactionId);
         verify(repository, never()).save(any(PixTransaction.class));
     }
+
+    // =========================================================================
+    // TESTES: cancelPix
+    // =========================================================================
+
+    @Test
+    @DisplayName("Should cancel Pix transaction successfully when current status is CREATED")
+    void shouldCancelPixTransactionSuccessfullyWhenStatusIsCreated() {
+        // 1. ARRANGE: Prepara uma transação existente no estado estritamente CREATED
+        UUID transactionId = UUID.randomUUID();
+        PixTransaction entity =
+                new PixTransaction(
+                        transactionId,
+                        "1001-X",
+                        new BigDecimal("150.50"),
+                        "00020126580014br.gov.bcb.pix...",
+                        "carlos@pix.com");
+
+        when(repository.findById(transactionId)).thenReturn(Optional.of(entity));
+        when(repository.save(entity)).thenReturn(entity);
+
+        // 2. ACT: Executa a operação de cancelamento
+        PixResponseDTO response = pixService.cancelPix(transactionId);
+
+        // 3. ASSERT: Valida que o estado final é CANCELLED e que foi persistido
+        assertNotNull(response);
+        assertEquals(transactionId, response.id());
+        assertEquals(PixStatus.CANCELLED, response.status());
+
+        verify(repository, times(1)).findById(transactionId);
+        verify(repository, times(1)).save(entity);
+        assertEquals(PixStatus.CANCELLED, entity.getStatus());
+    }
+
+    @Test
+    @DisplayName("Should throw ResourceNotFoundException when cancelling non-existent transaction")
+    void shouldThrowResourceNotFoundExceptionWhenCancellingNonExistentTransaction() {
+        // 1. ARRANGE: O repositório não encontra nada para o UUID informado
+        UUID nonExistentId = UUID.randomUUID();
+        when(repository.findById(nonExistentId)).thenReturn(Optional.empty());
+
+        // 2. ACT & ASSERT: Lançamento de ResourceNotFoundException e nenhuma
+        // persistência
+        ResourceNotFoundException exception =
+                assertThrows(
+                        ResourceNotFoundException.class, () -> pixService.cancelPix(nonExistentId));
+
+        assertEquals("Pix transaction not found with ID: " + nonExistentId, exception.getMessage());
+        verify(repository, times(1)).findById(nonExistentId);
+        verify(repository, never()).save(any(PixTransaction.class));
+    }
+
+    @ParameterizedTest
+    @EnumSource(mode = EnumSource.Mode.EXCLUDE, names = "CREATED")
+    @DisplayName(
+            "Should throw BusinessException when attempting to cancel transaction in invalid"
+                    + " status")
+    void shouldThrowBusinessExceptionWhenCancellingNonCreatedTransaction(PixStatus invalidStatus) {
+        // 1. ARRANGE: Cria entidade com status que NÃO seja CREATED (PAID, REFUNDED,
+        // CANCELLED)
+        UUID transactionId = UUID.randomUUID();
+        PixTransaction entity =
+                new PixTransaction(
+                        transactionId,
+                        "1001-X",
+                        new BigDecimal("150.50"),
+                        "00020126580014br.gov.bcb.pix...",
+                        "carlos@pix.com");
+        entity.setStatus(invalidStatus);
+
+        when(repository.findById(transactionId)).thenReturn(Optional.of(entity));
+
+        // 2. ACT & ASSERT: A entidade rica barra a transição proibida
+        BusinessException exception =
+                assertThrows(BusinessException.class, () -> pixService.cancelPix(transactionId));
+
+        assertTrue(exception.getMessage().contains("Pix transaction cannot be cancelled"));
+        assertTrue(exception.getMessage().contains(invalidStatus.name()));
+
+        verify(repository, times(1)).findById(transactionId);
+        verify(repository, never()).save(any(PixTransaction.class));
+    }
 }
