@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.study.payments.dto.CreatePixRequestDTO;
 import com.study.payments.dto.PixResponseDTO;
+import com.study.payments.exception.BusinessException;
 import com.study.payments.exception.ResourceNotFoundException;
 import com.study.payments.model.PixStatus;
 import com.study.payments.service.PixService;
@@ -274,6 +275,28 @@ class PixControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    @DisplayName(
+            "Should return 422 Unprocessable Entity when refund transition is forbidden by business"
+                    + " rule")
+    void shouldReturn422UnprocessableEntityWhenRefundTransitionIsForbidden() throws Exception {
+        // 1. ARRANGE: O serviço lança BusinessException devido a status incompatível
+        // (ex: CANCELLED)
+        UUID transactionId = UUID.randomUUID();
+        when(pixService.refundPix(transactionId))
+                .thenThrow(
+                        new BusinessException(
+                                "Pix transaction cannot be refunded because its current status is"
+                                        + " CANCELLED"));
+
+        // 2. ACT & ASSERT: Spring MVC traduz BusinessException com @ResponseStatus para
+        // HTTP 422
+        mockMvc.perform(
+                        post("/api/v1/pix/{id}/refund", transactionId)
+                                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnprocessableEntity());
+    }
+
     // =========================================================================
     // TESTES: cancelPix (POST /api/v1/pix/{id}/cancel)
     // =========================================================================
@@ -333,5 +356,27 @@ class PixControllerTest {
                         post("/api/v1/pix/{id}/cancel", "uuid-invalido-123")
                                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName(
+            "Should return 422 Unprocessable Entity when cancel transition is forbidden by business"
+                    + " rule")
+    void shouldReturn422UnprocessableEntityWhenCancelTransitionIsForbidden() throws Exception {
+        // 1. ARRANGE: O serviço lança BusinessException devido a status incompatível
+        // (ex: PAID)
+        UUID transactionId = UUID.randomUUID();
+        when(pixService.cancelPix(transactionId))
+                .thenThrow(
+                        new BusinessException(
+                                "Pix transaction cannot be cancelled because its current status is"
+                                        + " PAID"));
+
+        // 2. ACT & ASSERT: Spring MVC traduz BusinessException com @ResponseStatus para
+        // HTTP 422
+        mockMvc.perform(
+                        post("/api/v1/pix/{id}/cancel", transactionId)
+                                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnprocessableEntity());
     }
 }
