@@ -44,4 +44,32 @@ public class FakePagarmeController {
                 null // TODO paid_at permanece nulo até a liquidação via Webhook no Épico 03
                 );
     }
+
+    @PostMapping("/charges/{id}/refund")
+    @ResponseStatus(HttpStatus.OK)
+    public PagarmeChargeResponseDTO refundCharge(
+        @PathVariable String id,
+        @RequestBody(required = false) PagarmeChargeRequestDTO request) {
+        log.info("Received fake Pagar.me refund request for chargeId: {}", id);
+
+        Integer amount = null;
+        String code = null;
+
+        if (request != null) {
+            amount = request.amount();
+            code = request.code();
+        }
+
+        log.info(
+            "Fake Pagar.me charge refunded successfully. ChargeId: {}, Amount (cents): {}",
+            id,
+            amount);
+
+        return new PagarmeChargeResponseDTO(
+            id,
+            code,
+            amount,
+            "refunded",
+            null);
+    }
 }
