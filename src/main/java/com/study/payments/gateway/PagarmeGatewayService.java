@@ -92,4 +92,72 @@ public class PagarmeGatewayService {
             throw new BusinessException("Internal integration failure while processing payment.");
         }
     }
+
+    /**
+     * Solicita o estorno da cobrança junto à adquirente externa. Aplica a
+     * Anti-Corruption Layer (ACL): converte BigDecimal em centavos inteiros.
+     */
+    public PagarmeChargeResponseDTO refundCharge(PixTransaction transaction) {
+        // 1. Conversão ACL: BigDecimal interno -> centavos inteiros exigidos pelo gateway
+        Integer amountInCents =
+            transaction.getAmount().multiply(BigDecimal.valueOf(100)).intValue();
+
+        // 2. Montagem do payload de estorno para a adquirente
+        PagarmeChargeRequestDTO requestPayload =
+            new PagarmeChargeRequestDTO(amountInCents, "pix", transaction.getId().toString());
+
+        log.info(
+            "Sending refund request to Pagar.me Gateway. TransactionId: {}, Amount (cents): {}",
+            transaction.getId(),
+            requestPayload.amount());
+
+        // 3. Disparo da requisição HTTP POST para /charges/{id}/refund
+        try {
+            PagarmeChargeResponseDTO response =
+                pagarmeRestClient
+                    .post()
+                    .uri("/charges/{id}/refund", transaction.getId().toString())
+                    .body(requestPayload)
+                    .retrieve()
+                    .body(PagarmeChargeResponseDTO.class);
+
+            log.info(
+                "Received refund response from Pagar.me Gateway. ChargeId: {}, Status: {}",
+                response.id(),
+                response.status());
+
+            return response;
+
+        } catch (ResourceAccessException ex) {
+            // Captura timeouts ou adquirente fora do ar (erro de rede/I/O)
+            log.error(
+                "Network timeout or gateway unavailable when refunding with Pagar.me."
+                    + " TransactionId: {}",
+                transaction.getId(),
+                ex);
+            throw new BusinessException(
+                "Payment gateway is currently unavailable or timed out. Please try again"
+                    + " later.");
+
+        } catch (RestClientResponseException ex) {
+            // Captura respostas HTTP de erro (4xx ou 5xx) devolvidas pelo gateway
+            log.error(
+                "Pagar.me Gateway returned an HTTP error during refund. Status: {},"
+                    + " ResponseBody: {}, TransactionId: {}",
+                ex.getStatusCode(),
+                ex.getResponseBodyAsString(),
+                transaction.getId(),
+                ex);
+            throw new BusinessException(
+                "Payment gateway rejected the refund request: " + ex.getStatusCode());
+
+        } catch (Exception ex) {
+            // Falha inesperada durante a integração
+            log.error(
+                "Unexpected error during gateway refund integration. TransactionId: {}",
+                transaction.getId(),
+                ex);
+            throw new BusinessException("Internal integration failure while processing refund.");
+        }
+    }
 }
