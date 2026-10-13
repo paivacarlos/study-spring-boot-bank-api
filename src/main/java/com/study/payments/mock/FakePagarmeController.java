@@ -48,8 +48,8 @@ public class FakePagarmeController {
     @PostMapping("/charges/{id}/refund")
     @ResponseStatus(HttpStatus.OK)
     public PagarmeChargeResponseDTO refundCharge(
-        @PathVariable String id,
-        @RequestBody(required = false) PagarmeChargeRequestDTO request) {
+            @PathVariable String id,
+            @RequestBody(required = false) PagarmeChargeRequestDTO request) {
         log.info("Received fake Pagar.me refund request for chargeId: {}", id);
 
         Integer amount = null;
@@ -61,15 +61,10 @@ public class FakePagarmeController {
         }
 
         log.info(
-            "Fake Pagar.me charge refunded successfully. ChargeId: {}, Amount (cents): {}",
-            id,
-            amount);
+                "Fake Pagar.me charge refunded successfully. ChargeId: {}, Amount (cents): {}",
+                id,
+                amount);
 
-        return new PagarmeChargeResponseDTO(
-            id,
-            code,
-            amount,
-            "refunded",
-            null);
+        return new PagarmeChargeResponseDTO(id, code, amount, "refunded", null);
     }
 }
