@@ -188,4 +188,179 @@ class PagarmeGatewayServiceTest {
                 exception.getMessage());
         mockServer.verify();
     }
+
+    // =========================================================================
+    // TESTES: refundCharge (Task 4.5)
+    // =========================================================================
+
+    @Test
+    @DisplayName("Should refund charge successfully and convert amount to cents (Happy Path)")
+    void shouldRefundChargeSuccessfully() {
+        // 1. ARRANGE
+        UUID transactionId = UUID.randomUUID();
+        PixTransaction transaction =
+                new PixTransaction(
+                        transactionId,
+                        "1001-X",
+                        new BigDecimal("150.50"),
+                        "mock-qrcode",
+                        "carlos@pix.com");
+
+        String simulatedRefundResponse =
+                """
+                {
+                    "id": "ch_mock123456",
+                    "code": "%s",
+                    "amount": 15050,
+                    "status": "refunded",
+                    "paid_at": null
+                }
+                """
+                        .formatted(transactionId);
+
+        String expectedUrl =
+                "http://localhost:8080/pagarme-fake/charges/" + transactionId + "/refund";
+
+        mockServer
+                .expect(requestTo(expectedUrl))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(jsonPath("$.amount").value(15050))
+                .andExpect(jsonPath("$.payment_method").value("pix"))
+                .andExpect(jsonPath("$.code").value(transactionId.toString()))
+                .andRespond(withSuccess(simulatedRefundResponse, MediaType.APPLICATION_JSON));
+
+        // 2. ACT
+        PagarmeChargeResponseDTO response = gatewayService.refundCharge(transaction);
+
+        // 3. ASSERT
+        assertNotNull(response);
+        assertEquals("ch_mock123456", response.id());
+        assertEquals("refunded", response.status());
+        assertEquals(15050, response.amount());
+        assertEquals(transactionId.toString(), response.code());
+
+        mockServer.verify();
+    }
+
+    @Test
+    @DisplayName("Should throw BusinessException when gateway returns HTTP 500 on refund")
+    void shouldThrowBusinessExceptionWhenGatewayReturnsServerErrorOnRefund() {
+        // 1. ARRANGE
+        UUID transactionId = UUID.randomUUID();
+        PixTransaction transaction =
+                new PixTransaction(
+                        transactionId,
+                        "1001-X",
+                        new BigDecimal("50.00"),
+                        "mock-qrcode",
+                        "carlos@pix.com");
+
+        String expectedUrl =
+                "http://localhost:8080/pagarme-fake/charges/" + transactionId + "/refund";
+
+        mockServer
+                .expect(requestTo(expectedUrl))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withServerError());
+
+        // 2. ACT & ASSERT
+        BusinessException exception =
+                assertThrows(
+                        BusinessException.class, () -> gatewayService.refundCharge(transaction));
+
+        assertTrue(exception.getMessage().contains("Payment gateway rejected the refund request"));
+        mockServer.verify();
+    }
+
+    @Test
+    @DisplayName("Should throw BusinessException when gateway returns HTTP 400 on refund")
+    void shouldThrowBusinessExceptionWhenGatewayReturnsBadRequestOnRefund() {
+        // 1. ARRANGE
+        UUID transactionId = UUID.randomUUID();
+        PixTransaction transaction =
+                new PixTransaction(
+                        transactionId,
+                        "1001-X",
+                        new BigDecimal("25.00"),
+                        "mock-qrcode",
+                        "carlos@pix.com");
+
+        String expectedUrl =
+                "http://localhost:8080/pagarme-fake/charges/" + transactionId + "/refund";
+
+        mockServer
+                .expect(requestTo(expectedUrl))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withBadRequest());
+
+        // 2. ACT & ASSERT
+        BusinessException exception =
+                assertThrows(
+                        BusinessException.class, () -> gatewayService.refundCharge(transaction));
+
+        assertTrue(exception.getMessage().contains("Payment gateway rejected the refund request"));
+        mockServer.verify();
+    }
+
+    @Test
+    @DisplayName("Should throw BusinessException when gateway returns HTTP 422 on refund")
+    void shouldThrowBusinessExceptionWhenGatewayReturnsUnprocessableEntityOnRefund() {
+        // 1. ARRANGE
+        UUID transactionId = UUID.randomUUID();
+        PixTransaction transaction =
+                new PixTransaction(
+                        transactionId,
+                        "1001-X",
+                        new BigDecimal("75.00"),
+                        "mock-qrcode",
+                        "carlos@pix.com");
+
+        String expectedUrl =
+                "http://localhost:8080/pagarme-fake/charges/" + transactionId + "/refund";
+
+        mockServer
+                .expect(requestTo(expectedUrl))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withStatus(HttpStatus.UNPROCESSABLE_ENTITY));
+
+        // 2. ACT & ASSERT
+        BusinessException exception =
+                assertThrows(
+                        BusinessException.class, () -> gatewayService.refundCharge(transaction));
+
+        assertTrue(exception.getMessage().contains("Payment gateway rejected the refund request"));
+        mockServer.verify();
+    }
+
+    @Test
+    @DisplayName("Should throw BusinessException when network timeout occurs on refund")
+    void shouldThrowBusinessExceptionWhenNetworkTimeoutOccursOnRefund() {
+        // 1. ARRANGE
+        UUID transactionId = UUID.randomUUID();
+        PixTransaction transaction =
+                new PixTransaction(
+                        transactionId,
+                        "1001-X",
+                        new BigDecimal("100.00"),
+                        "mock-qrcode",
+                        "carlos@pix.com");
+
+        String expectedUrl =
+                "http://localhost:8080/pagarme-fake/charges/" + transactionId + "/refund";
+
+        mockServer
+                .expect(requestTo(expectedUrl))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withException(new IOException("Read timed out after 5000ms")));
+
+        // 2. ACT & ASSERT
+        BusinessException exception =
+                assertThrows(
+                        BusinessException.class, () -> gatewayService.refundCharge(transaction));
+
+        assertEquals(
+                "Payment gateway is currently unavailable or timed out. Please try again later.",
+                exception.getMessage());
+        mockServer.verify();
+    }
 }
